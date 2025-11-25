@@ -1,13 +1,3 @@
-// DDAS - Data Download Duplication Alert System
-// Background Service Worker
-
-const CHECK_URL = 'http://localhost:9090/api/downloads/check';
-const LOG_URL = 'http://localhost:9090/api/downloads/log';
-
-const inProgressDownloads = new Map();
-const notificationLinks = new Map();
-
-// --- Helper function to get user settings from storage ---
 async function getSettings() {
     return new Promise((resolve) => {
         chrome.storage.sync.get({
