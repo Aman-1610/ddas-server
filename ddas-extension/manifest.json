@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "DDAS - Duplication Alert System",
+  "version": "1.6",
+  "description": "Alerts users about duplicate file downloads and allows user configuration.",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "permissions": [
+    "downloads",
+    "notifications",
+    "tabs",
+    "storage",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "http://localhost:9090/*"
+  ],
+  "icons": {
+    "48": "icon48.png"
+  }
+}
