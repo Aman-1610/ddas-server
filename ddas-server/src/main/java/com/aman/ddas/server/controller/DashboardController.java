@@ -2,6 +2,7 @@ package com.aman.ddas.server.controller;
 
 import com.aman.ddas.server.dto.DashboardStatsResponse;
 import com.aman.ddas.server.model.DownloadedFile;
+import com.aman.ddas.server.repository.BlockedDuplicateRepository;
 import com.aman.ddas.server.repository.DownloadedFileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -19,10 +20,12 @@ import java.util.stream.Collectors;
 public class DashboardController {
 
     private final DownloadedFileRepository repository;
+    private final BlockedDuplicateRepository blockedRepository;
 
     @Autowired
-    public DashboardController(DownloadedFileRepository repository) {
+    public DashboardController(DownloadedFileRepository repository, BlockedDuplicateRepository blockedRepository) {
         this.repository = repository;
+        this.blockedRepository = blockedRepository;
     }
 
     @GetMapping("/stats")
@@ -37,12 +40,13 @@ public class DashboardController {
         long activeUsers = repository.countDistinctDownloaderIds();
         response.setActiveUsers(activeUsers);
 
-        // 3. Duplicates Blocked (Mock logic for now)
-        response.setDuplicatesBlocked((long) (totalDownloads * 0.25));
+        // 3. Duplicates Blocked (Real logic)
+        long duplicatesBlocked = blockedRepository.count();
+        response.setDuplicatesBlocked(duplicatesBlocked);
 
-        // 4. Storage Saved (Mock logic)
-        long savedBytes = response.getDuplicatesBlocked() * 5 * 1024 * 1024;
-        response.setStorageSaved(formatSize(savedBytes));
+        // 4. Storage Saved (Real logic)
+        Long totalSavedBytes = blockedRepository.getTotalStorageSaved();
+        response.setStorageSaved(formatSize(totalSavedBytes != null ? totalSavedBytes : 0));
 
         // 5. Recent Activity
         List<DownloadedFile> recentFiles = repository.findTop5ByOrderByDownloadTimestampDesc();

@@ -28,7 +28,8 @@ export default function History() {
 
     return (
         <div className="min-h-screen font-sans selection:bg-primary/30 transition-colors duration-300">
-            {theme === 'dark' && <Background3D />}
+            {/* Show 3D background in both themes */}
+            <Background3D theme={theme} />
 
             <div className="relative z-10 container mx-auto px-6 py-8">
                 {/* Header */}
@@ -64,7 +65,7 @@ export default function History() {
                         <input
                             type="text"
                             placeholder="Search history..."
-                            className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
+                            className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all shadow-none"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -75,8 +76,8 @@ export default function History() {
                                 key={f}
                                 onClick={() => setFilter(f)}
                                 className={`px-6 py-3 rounded-xl font-medium transition-all ${filter === f
-                                        ? 'bg-primary text-black shadow-lg shadow-primary/25'
-                                        : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10'
+                                    ? 'bg-primary text-black shadow-none'
+                                    : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10'
                                     }`}
                             >
                                 {f}
@@ -90,7 +91,7 @@ export default function History() {
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-white dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-xl dark:shadow-none"
+                    className="bg-white dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-none"
                 >
                     <div className="overflow-x-auto">
                         <table className="w-full">
@@ -114,8 +115,8 @@ export default function History() {
                                     >
                                         <td className="py-4 px-6">
                                             <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${file.status === 'Duplicate'
-                                                    ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400'
-                                                    : 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400'
+                                                ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400'
+                                                : 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400'
                                                 }`}>
                                                 {file.status === 'Duplicate' ? <FileWarning size={14} /> : <CheckCircle size={14} />}
                                                 {file.status}

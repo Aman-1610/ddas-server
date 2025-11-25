@@ -7,5 +7,6 @@ public class DuplicateCheckRequest {
     private String originalUrl;
     private String etag;
     private Long contentLength;
-    private String fileName; // <-- ADD THIS LINE
+    private String fileName;
+    private String downloaderId;
 }

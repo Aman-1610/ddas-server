@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, HardDrive, FileWarning, CheckCircle, Download, Clock, User, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Background3D from '../components/Background3D';
-import CursorSwarm from '../components/CursorSwarm';
+
 import ThemeToggle from '../components/ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
 
@@ -13,7 +13,7 @@ function StatCard({ label, value, icon: Icon, color, delay }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay }}
-            className="bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 p-6 rounded-2xl hover:border-primary/50 dark:hover:border-primary/50 transition-all shadow-lg dark:shadow-none group"
+            className="bg-white dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 p-6 rounded-2xl hover:border-primary/50 dark:hover:border-primary/50 transition-all shadow-none group"
         >
             <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-xl bg-gray-100 dark:bg-white/5 ${color} group-hover:scale-110 transition-transform shadow-sm dark:shadow-none`}>
@@ -114,9 +114,9 @@ export default function Dashboard() {
 
     return (
         <div className="min-h-screen font-sans selection:bg-primary/30 transition-colors duration-300 text-black dark:text-white">
-            {/* Only show 3D background in dark mode for performance/aesthetic balance */}
-            {theme === 'dark' && <Background3D />}
-            {theme === 'dark' && <CursorSwarm />}
+            {/* Show 3D background in both themes */}
+            <Background3D theme={theme} />
+
 
             <div className="relative z-10 container mx-auto px-6 py-8">
                 {/* Header */}
@@ -167,7 +167,7 @@ export default function Dashboard() {
                     <input
                         type="text"
                         placeholder="Search for files, users, or hashes..."
-                        className="w-full bg-white dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all shadow-xl shadow-gray-200/50 dark:shadow-none"
+                        className="w-full bg-white dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all shadow-none"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -185,7 +185,7 @@ export default function Dashboard() {
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
-                    className="bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-3xl p-8 shadow-2xl shadow-gray-200/50 dark:shadow-none"
+                    className="bg-white dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-3xl p-8 shadow-none"
                 >
                     <div className="flex items-center justify-between mb-8">
                         <div>

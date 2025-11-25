@@ -3,7 +3,9 @@ package com.aman.ddas.server.service;
 import com.aman.ddas.server.dto.DuplicateCheckRequest;
 import com.aman.ddas.server.dto.DuplicateCheckResponse;
 import com.aman.ddas.server.dto.LogFileRequest;
+import com.aman.ddas.server.model.BlockedDuplicate;
 import com.aman.ddas.server.model.DownloadedFile;
+import com.aman.ddas.server.repository.BlockedDuplicateRepository;
 import com.aman.ddas.server.repository.DownloadedFileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,11 +25,14 @@ import java.util.regex.Pattern;
 public class DownloadCheckService {
 
     private final DownloadedFileRepository repository;
+    private final BlockedDuplicateRepository blockedRepository;
     private final QuotaService quotaService;
 
     @Autowired
-    public DownloadCheckService(DownloadedFileRepository repository, QuotaService quotaService) {
+    public DownloadCheckService(DownloadedFileRepository repository, BlockedDuplicateRepository blockedRepository,
+            QuotaService quotaService) {
         this.repository = repository;
+        this.blockedRepository = blockedRepository;
         this.quotaService = quotaService;
     }
 
@@ -56,11 +61,29 @@ public class DownloadCheckService {
 
         // Final fallback: Filename + Fuzzy Matching
         if (request.getFileName() != null) {
+            String requestedName = request.getFileName();
+
             // 1. Exact Match
-            Optional<DownloadedFile> existingFile = repository.findFirstByFileName(request.getFileName());
+            Optional<DownloadedFile> existingFile = repository.findFirstByFileName(requestedName);
             if (existingFile.isPresent()) {
                 System.out.println("CHECK: Duplicate found by Filename (Exact)");
                 return existingFile;
+            }
+
+            // 2. Smart Match (Strip " (N)" suffix)
+            // Regex to match " (1)", " (2)", " (1) (1)", etc. at the end of the name
+            // (before extension)
+            // Example: "report (1).docx" -> "report.docx"
+            // Example: "image (2).png" -> "image.png"
+            String cleanName = requestedName.replaceAll(" \\(\\d+\\)(?=\\.[^.]+$|$)", "");
+
+            if (!cleanName.equals(requestedName)) {
+                System.out.println("CHECK: Checking for clean filename: " + cleanName);
+                Optional<DownloadedFile> cleanMatch = repository.findFirstByFileName(cleanName);
+                if (cleanMatch.isPresent()) {
+                    System.out.println("CHECK: Duplicate found by Filename (Smart Match)");
+                    return cleanMatch;
+                }
             }
         }
 
@@ -70,6 +93,24 @@ public class DownloadCheckService {
     public DuplicateCheckResponse checkForDuplicate(DuplicateCheckRequest request) {
         Optional<DownloadedFile> duplicate = findDuplicate(request);
         if (duplicate.isPresent()) {
+            // Log the blocked duplicate
+            try {
+                BlockedDuplicate blocked = new BlockedDuplicate();
+                blocked.setFileName(
+                        request.getFileName() != null ? request.getFileName() : duplicate.get().getFileName());
+                // Use the size of the EXISTING file, as the request might not have the length
+                // yet
+                blocked.setFileSize(
+                        duplicate.get().getContentLength() != null ? duplicate.get().getContentLength() : 0L);
+                blocked.setDownloaderId(request.getDownloaderId() != null ? request.getDownloaderId() : "Unknown");
+                blocked.setBlockedTimestamp(LocalDateTime.now());
+                blocked.setOriginalFileId(duplicate.get().getId());
+                blockedRepository.save(blocked);
+                System.out.println("LOG: Blocked duplicate logged for file: " + blocked.getFileName());
+            } catch (Exception e) {
+                System.err.println("LOG: Failed to log blocked duplicate: " + e.getMessage());
+            }
+
             return DuplicateCheckResponse.duplicate(duplicate.get());
         } else {
             System.out.println("CHECK: No duplicate found.");
