@@ -1,3 +1,12 @@
+// DDAS - Data Download Duplication Alert System
+// Background Service Worker
+
+const CHECK_URL = 'https://ddas-backend-dgbo.onrender.com/api/downloads/check';
+const LOG_URL = 'https://ddas-backend-dgbo.onrender.com/api/downloads/log';
+
+const inProgressDownloads = new Map();
+const notificationLinks = new Map();
+
 async function getSettings() {
     return new Promise((resolve) => {
         chrome.storage.sync.get({
