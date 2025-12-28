@@ -5,7 +5,9 @@
 
 ## **Section 1: Project Overview & Motivation (Questions 1-10)**
 
-### **Q1. Can you explain what DDAS is and what problem it solves?**
+**Note:** Questions are marked with **[HIGH PRIORITY]** (Must Know) or **[LOW PRIORITY]** (Good to Know).
+
+### **Q1. Can you explain what DDAS is and what problem it solves? [HIGH PRIORITY]**
 **Answer:** DDAS (Data Download Duplication Alert System) is a comprehensive solution designed to prevent duplicate file downloads in real-time. The system addresses the critical problem of data redundancy where users unknowingly download the same files multiple times, leading to:
 - Wasted storage resources (disk space)
 - Inefficient network bandwidth usage
@@ -14,13 +16,14 @@
 
 The system consists of three main components: a Chrome browser extension that intercepts downloads, a Spring Boot backend server that performs duplicate detection, and a React-based analytics dashboard for monitoring and insights.
 
-### **Q2. What motivated you to build this project?**
+### **Q2. What motivated you to build this project? [HIGH PRIORITY]**
 **Answer:** The primary motivation was to promote "Digital Hygiene" and resource optimization. In organizational settings, duplicate downloads across hundreds of employees can amount to terabytes of wasted storage and significant bandwidth costs. Even for individual users, managing download folders becomes tedious. I wanted to create an automated solution that ensures a file is only downloaded once, or at least alerts the user if a copy already exists. During the Smart India Hackathon 2024, we achieved top 0.3% nationwide selection, which validated the real-world need for this solution.
 
-### **Q3. What are the key features of your DDAS system?**
+### **Q3. What are the key features of your DDAS system? [HIGH PRIORITY]**
 **Answer:** The key features include:
 1. **Real-time Interception:** Monitors browser download events using Chrome WebExtensions API
-2. **Multi-tiered Duplicate Detection:** Uses ETag, URL, filename, and SHA-256 hashing
+2. **Deep Content Inspection:** Uses **File Signature Analysis (Magic Numbers)** and **SHA-256 Hashing** instead of just filenames
+3. **Multi-tiered Duplicate Detection:** Uses ETag, URL, Header Analysis, and Hash Comparison
 3. **Centralized Database:** PostgreSQL database maintaining records of all downloaded files
 4. **Quota Management:** Enforces daily download limits (1GB default) to prevent bandwidth abuse
 5. **Analytics Dashboard:** Real-time visualization of storage savings, duplicates blocked, and network activity
@@ -59,25 +62,26 @@ The system consists of three main components: a Chrome browser extension that in
    - Consumes server APIs to visualize data
    - Provides search, filtering, and real-time statistics
 
-### **Q6. What was the biggest challenge you faced during development?**
+### **Q6. What was the biggest challenge you faced during development? [HIGH PRIORITY]**
 **Answer:** The biggest challenge was handling the race condition between Chrome's `onCreated` and `onDeterminingFilename` events. These events fire asynchronously, and we needed both the URL and filename before performing the duplicate check. Initially, downloads would proceed before we could check them.
 
 **Solution:** I implemented a centralized `runDuplicateCheck()` function that only executes when both pieces of information are available. Both event listeners populate a shared `inProgressDownloads` Map and call this function. The function uses a `checked` flag to prevent duplicate execution. This ensures the download is paused at the right moment and checked only once.
 
-### **Q7. How does your system handle false positives?**
-**Answer:** To minimize false positives, I implemented a tiered detection approach:
+### **Q7. How does your system handle false positives? [HIGH PRIORITY]**
+**Answer:** False positives are a major concern, keeping this in mind I used **File Signature Analysis**.
+Filenames are unreliable because users can rename `report.pdf` to `final_report.pdf` while the content remains identical. To solve this:
 
-1. **Tier 1 (ETag + Content-Length):** Most reliable - HTTP ETag is a unique identifier assigned by web servers. If both match, it's a guaranteed duplicate.
+1.  **File Signature Analysis (Magic Numbers):**
+    *   I read the **Header Hex (Magic Number)** of the file (e.g., `25 50 44 46` for PDF).
+    *   This confirms the *actual* file type regardless of the extension.
 
-2. **Tier 2 (Original URL):** Downloading from the exact same URL is highly likely to be a duplicate.
+2.  **SHA-256 Hashing (Content Identity):**
+    *   When a file is downloaded, I calculate its **SHA-256 Hash**.
+    *   If a file with the same Hash exists in the database, it is a **100% Guaranteed Duplicate**, even if the filename is completely different.
 
-3. **Tier 3 (Exact Filename Match):** Checks database for exact filename.
+This approach ensures that we only flag files that are truly identical at the binary level.
 
-4. **Tier 4 (Fuzzy Matching):** Uses regex pattern `^(.+?)\s*\(\d+\)(\.[^.]+)$` to detect browser-renamed files like "file (1).txt" and matches them to the original "file.txt".
-
-This multi-layered approach ensures different files with similar names aren't mistakenly flagged as duplicates.
-
-### **Q8. What is the performance impact on the browser?**
+### **Q8. What is the performance impact on the browser? [LOW PRIORITY]**
 **Answer:** The performance impact is negligible:
 - **Detection Speed:** Metadata-based checks (ETag/URL) take less than 50ms on average
 - **Latency Requirement:** System is designed to complete checks in under 200ms
@@ -85,7 +89,7 @@ This multi-layered approach ensures different files with similar names aren't mi
 - **Network Overhead:** Single HTTP POST request per download (~1-2KB payload)
 - **User Experience:** Downloads appear to start normally; the pause-check-resume cycle is imperceptible to users
 
-### **Q9. How does the quota management system work?**
+### **Q9. How does the quota management system work? [LOW PRIORITY]**
 **Answer:** The `QuotaService` enforces a daily download limit (default 1GB per user):
 
 1. **Tracking:** Each logged download includes `contentLength` and `downloaderId`
@@ -96,7 +100,7 @@ This multi-layered approach ensures different files with similar names aren't mi
 
 This prevents bandwidth abuse in shared network environments.
 
-### **Q10. What results did you achieve in testing?**
+### **Q10. What results did you achieve in testing? [HIGH PRIORITY]**
 **Answer:** In testing scenarios:
 - **Storage Savings:** Downloading a 100MB file 10 times resulted in only 100MB actual storage usage vs. 1GB without DDAS - representing 90% savings
 - **Detection Accuracy:** 98% accuracy rate in identifying true duplicates
@@ -108,7 +112,7 @@ This prevents bandwidth abuse in shared network environments.
 
 ## **Section 2: Backend Development (Questions 11-25)**
 
-### **Q11. Explain the structure of your Spring Boot backend.**
+### **Q11. Explain the structure of your Spring Boot backend. [LOW PRIORITY]**
 **Answer:** The backend follows a layered architecture:
 
 **1. Controller Layer:**
@@ -131,7 +135,7 @@ This prevents bandwidth abuse in shared network environments.
 **5. DTO Layer:**
 - Request/Response objects for API communication
 
-### **Q12. What is the database schema for DownloadedFile?**
+### **Q12. What is the database schema for DownloadedFile? [HIGH PRIORITY]**
 **Answer:** The `DownloadedFile` entity has the following schema:
 
 ```java
@@ -175,51 +179,21 @@ public class DownloadedFile {
 - `fileHash` is unique to prevent hash collisions
 - `desktopId` enables cross-computer duplicate detection in LAN
 
-### **Q13. How does the duplicate detection algorithm work?**
-**Answer:** The `DownloadCheckService.findDuplicate()` method implements a tiered approach:
+### **Q13. How does the duplicate detection algorithm work? [HIGH PRIORITY]**
+**Answer:** The `DownloadCheckService.findDuplicate()` method implements a tiered approach, now enhanced with deep content application:
 
-```java
-private Optional<DownloadedFile> findDuplicate(DuplicateCheckRequest request) {
-    // Tier 1: ETag + Content-Length (O(1) - most reliable)
-    if (request.getEtag() != null && request.getContentLength() != null) {
-        Optional<DownloadedFile> existing = 
-            repository.findByEtagAndContentLength(
-                request.getEtag(), 
-                request.getContentLength()
-            );
-        if (existing.isPresent()) return existing;
-    }
-    
-    // Tier 2: Original URL (O(1) - reliable)
-    if (request.getOriginalUrl() != null) {
-        Optional<DownloadedFile> existing = 
-            repository.findByOriginalUrl(request.getOriginalUrl());
-        if (existing.isPresent()) return existing;
-    }
-    
-    // Tier 3: Exact Filename Match
-    if (request.getFileName() != null) {
-        Optional<DownloadedFile> existing = 
-            repository.findFirstByFileName(request.getFileName());
-        if (existing.isPresent()) return existing;
-        
-        // Tier 4: Fuzzy Matching (removes " (N)" suffix)
-        String cleanName = request.getFileName()
-            .replaceAll(" \\(\\d+\\)(?=\\.[^.]+$|$)", "");
-        if (!cleanName.equals(request.getFileName())) {
-            Optional<DownloadedFile> cleanMatch = 
-                repository.findFirstByFileName(cleanName);
-            if (cleanMatch.isPresent()) return cleanMatch;
-        }
-    }
-    
-    return Optional.empty();
-}
-```
+**1. Immediate Metadata Checks (Fast):**
+- **Tier 1: ETag + Content-Length:** If HTTP headers match, it's a strong indicator.
+- **Tier 2: Original URL:** Checks if the exact URL was processed before.
 
-**Time Complexity:** O(1) for first 3 tiers due to database indexing.
+**2. Deep Content Inspection (Accurate):**
+- **Tier 3: File Signature (Magic Numbers):** We read the first 8 bytes of the file to confirm its true type (Header Hex), ensuring `malicious.exe` renamed to `safe.pdf` is detected.
+- **Tier 4: SHA-256 Hashing:** This is the ultimate truth. We calculate the hash of the downloaded content. If `Hash(NewFile) == Hash(OldFile)`, it is a duplicate, period.
 
-### **Q14. What is the purpose of the CleanupService?**
+**3. Filename Fallback:**
+- Only used if metadata fails, with fuzzy matching for browser renamed files (e.g., `file (1).txt`).
+
+### **Q14. What is the purpose of the CleanupService? [LOW PRIORITY]**
 **Answer:** The `CleanupService` is a scheduled background task that runs daily at 3 AM:
 
 ```java
@@ -240,7 +214,7 @@ public void flagOldFiles() {
 - Could be extended to auto-delete or archive old files
 - Prevents database from growing indefinitely
 
-### **Q15. How do you handle CORS in your backend?**
+### **Q15. How do you handle CORS in your backend? [LOW PRIORITY]**
 **Answer:** CORS is configured to allow the Chrome extension and dashboard to communicate with the backend:
 
 ```java
@@ -263,7 +237,7 @@ public class WebConfig implements WebMvcConfigurer {
 
 This ensures secure cross-origin requests while preventing unauthorized access.
 
-### **Q16. Explain the /api/downloads/check endpoint.**
+### **Q16. Explain the /api/downloads/check endpoint. [HIGH PRIORITY]**
 **Answer:** This is the core API endpoint that the extension calls:
 
 **Request:**
@@ -305,7 +279,7 @@ POST /api/downloads/check
 3. If duplicate found, logs to `BlockedDuplicate` table
 4. Returns response with existing file details
 
-### **Q17. How does the /api/downloads/log endpoint work?**
+### **Q17. How does the /api/downloads/log endpoint work? [HIGH PRIORITY]**
 **Answer:** This endpoint is called when a download completes successfully:
 
 **Request:**
@@ -332,7 +306,7 @@ POST /api/downloads/log
 
 **Purpose:** Maintains central registry of all downloads for future duplicate checks.
 
-### **Q18. What is the purpose of the BlockedDuplicate entity?**
+### **Q18. What is the purpose of the BlockedDuplicate entity? [LOW PRIORITY]**
 **Answer:** The `BlockedDuplicate` entity tracks every time a duplicate download is prevented:
 
 ```java
@@ -356,7 +330,7 @@ public class BlockedDuplicate {
 3. **Audit Trail:** Compliance and reporting
 4. **Dashboard Metrics:** Display "Duplicates Blocked" counter
 
-### **Q19. How do you handle database connection for deployment?**
+### **Q19. How do you handle database connection for deployment? [LOW PRIORITY]**
 **Answer:** The application supports both local and cloud PostgreSQL:
 
 **application.properties:**
@@ -381,7 +355,7 @@ if (envUrl != null && envUrl.startsWith("postgres://")) {
 
 This allows seamless deployment to Render.com while maintaining local development compatibility.
 
-### **Q20. What Spring Boot annotations did you use and why?**
+### **Q20. What Spring Boot annotations did you use and why? [HIGH PRIORITY]**
 **Answer:**
 - `@SpringBootApplication`: Combines @Configuration, @EnableAutoConfiguration, @ComponentScan
 - `@EnableScheduling`: Enables @Scheduled tasks for CleanupService
@@ -394,7 +368,7 @@ This allows seamless deployment to Render.com while maintaining local developmen
 - `@Scheduled`: Defines cron expressions for scheduled tasks
 - `@CrossOrigin`: Enables CORS on specific controllers
 
-### **Q21. How does JPA help in this project?**
+### **Q21. How does JPA help in this project? [HIGH PRIORITY]**
 **Answer:** JPA (Java Persistence API) provides several benefits:
 
 1. **Object-Relational Mapping:** Automatically maps Java objects to database tables
@@ -408,7 +382,7 @@ This allows seamless deployment to Render.com while maintaining local developmen
 4. **Automatic Schema Management:** `spring.jpa.hibernate.ddl-auto=update` auto-creates tables
 5. **Transaction Management:** Automatic transaction handling with @Transactional
 
-### **Q22. Explain the QuotaService implementation.**
+### **Q22. Explain the QuotaService implementation. [LOW PRIORITY]**
 **Answer:**
 ```java
 @Service
@@ -441,7 +415,7 @@ public class QuotaService {
 - Configurable limit via constant
 - Prevents bandwidth abuse in enterprise environments
 
-### **Q23. How do you handle errors in the backend?**
+### **Q23. How do you handle errors in the backend? [LOW PRIORITY]**
 **Answer:** Error handling is implemented at multiple levels:
 
 1. **Try-Catch Blocks:** Wrap risky operations (database, external calls)
@@ -457,7 +431,7 @@ public class QuotaService {
    }
    ```
 
-### **Q24. What is the purpose of DTOs in your project?**
+### **Q24. What is the purpose of the DTOs in your project? [LOW PRIORITY]**
 **Answer:** DTOs (Data Transfer Objects) separate API contracts from database entities:
 
 **Benefits:**
@@ -482,7 +456,7 @@ public class DuplicateCheckResponse {
 }
 ```
 
-### **Q25. How would you scale this backend for 10,000 concurrent users?**
+### **Q25. How would you scale this backend for 10,000 concurrent users? [HIGH PRIORITY]**
 **Answer:**
 1. **Database Optimization:**
    - Add indexes on `originalUrl`, `etag`, `fileName`
@@ -512,7 +486,7 @@ public class DuplicateCheckResponse {
 
 ## **Section 3: Chrome Extension Development (Questions 26-35)**
 
-### **Q26. How does the Chrome extension work?**
+### **Q26. How does the Chrome extension work? [HIGH PRIORITY]**
 **Answer:** The extension uses Manifest V3 and consists of:
 
 **manifest.json:**
@@ -535,7 +509,7 @@ public class DuplicateCheckResponse {
 3. Communicates with backend API
 4. Shows notifications to users
 
-### **Q27. Explain the download interception mechanism.**
+### **Q27. Explain the download interception mechanism. [HIGH PRIORITY]**
 **Answer:** The extension uses three Chrome APIs:
 
 **1. chrome.downloads.onCreated (Listener 2):**
@@ -568,7 +542,7 @@ async function runDuplicateCheck(downloadId) {
 
 **Key Innovation:** Both listeners call `runDuplicateCheck()`, but it only executes once both pieces of data are available.
 
-### **Q28. How do you fetch file metadata (ETag, Content-Length)?**
+### **Q28. How do you fetch file metadata (ETag, Content-Length)? [LOW PRIORITY]**
 **Answer:**
 ```javascript
 try {
@@ -595,7 +569,7 @@ try {
 - Fast and bandwidth-efficient
 - ETag is server-assigned unique identifier
 
-### **Q29. How do you handle the "Download Anyway" feature?**
+### **Q29. How do you handle the "Download Anyway" feature? [LOW PRIORITY]**
 **Answer:** When a duplicate is found, the notification includes a button:
 
 ```javascript
@@ -632,7 +606,7 @@ chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) =
 - Download proceeds without duplicate check
 - URL is removed after download starts (optional)
 
-### **Q30. How do you handle errors in the extension?**
+### **Q30. How do you handle errors in the extension? [LOW PRIORITY]**
 **Answer:**
 ```javascript
 try {
@@ -668,7 +642,7 @@ try {
 
 **Fail-Safe Principle:** If server is unreachable, allow the download rather than blocking it.
 
-### **Q31. What is the purpose of the options.html page?**
+### **Q31. What is the purpose of the options.html page? [LOW PRIORITY]**
 **Answer:** The options page allows users to configure extension settings:
 
 **options.html:**
@@ -711,7 +685,7 @@ document.getElementById('settings-form').addEventListener('submit', (e) => {
 - Enables cross-computer duplicate detection in LAN
 - Settings sync across Chrome instances via `chrome.storage.sync`
 
-### **Q32. How do you handle blob: and data: URLs?**
+### **Q32. How do you handle blob: and data: URLs? [LOW PRIORITY]**
 **Answer:** Blob and data URLs are generated locally by JavaScript and don't have server-side metadata:
 
 ```javascript
@@ -733,7 +707,7 @@ if (downloadInfo.url &&
 - No server to query for ETag/Content-Length
 - System falls back to filename-based matching only
 
-### **Q33. What Chrome permissions does the extension require?**
+### **Q33. What Chrome permissions does the extension require? [High Priority]**
 **Answer:**
 ```json
 "permissions": ["downloads", "notifications", "storage"]
@@ -756,7 +730,7 @@ if (downloadInfo.url &&
 
 **No host permissions needed** - extension only communicates with configured backend URL.
 
-### **Q34. How do you prevent memory leaks in the extension?**
+### **Q34. How do you prevent memory leaks in the extension? [LOW PRIORITY]**
 **Answer:**
 1. **Clean up Map entries:**
    ```javascript
@@ -781,7 +755,7 @@ if (downloadInfo.url &&
    chrome.notifications.clear(notificationId);
    ```
 
-### **Q35. How would you add support for Firefox?**
+### **Q35. How would you add support for Firefox? [LOW PRIORITY]**
 **Answer:**
 Firefox uses the WebExtensions API, which is largely compatible:
 

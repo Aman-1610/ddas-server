@@ -151,19 +151,6 @@ DDAS follows a classic **Client-Server Architecture**:
 
 1.  **Client (Chrome Extension):**
     *   Acts as the interface between the user and the system.
-    *   Captures download metadata.
-    *   Displays notifications and confirmation dialogs.
-2.  **Server (Spring Boot Application):**
-    *   Exposes RESTful APIs (`/api/check`, `/api/log`, `/api/stats`).
-    *   Contains the business logic for duplicate detection and quota management.
-    *   Connects to the database.
-3.  **Database (H2/SQL):**
-    *   Stores the `DownloadedFile` entities.
-4.  **Admin Dashboard (React Single Page App):**
-    *   Consumes Server APIs to visualize data.
-
-#### 6.2 Data Flow
-1.  **User** initiates a download.
 2.  **Extension** pauses the download and extracts: `URL`, `Filename`, `FileSize`, `ETag`.
 3.  **Extension** sends a `POST` request to `Server`.
 4.  **Server** checks the Database using the tiered algorithm.

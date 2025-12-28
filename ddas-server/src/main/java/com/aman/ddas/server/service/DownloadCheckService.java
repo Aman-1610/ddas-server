@@ -151,19 +151,32 @@ public class DownloadCheckService {
         newFile.setContentLength(request.getContentLength());
 
         // Try to calculate hash if file is accessible locally
+        // Try to calculate hash and signature if file is accessible locally
         String calculatedHash = request.getFileHash();
-        if (calculatedHash == null && request.getLocalStoragePath() != null) {
+        String fileSignature = null;
+
+        if (request.getLocalStoragePath() != null) {
             try {
                 File file = new File(request.getLocalStoragePath());
                 if (file.exists() && file.canRead()) {
-                    calculatedHash = calculateFileHash(file);
-                    System.out.println("LOG: Calculated SHA-256 hash: " + calculatedHash);
+                    // 1. Calculate SHA-256 (Content-based Identity)
+                    // If not provided by client, calculate it here
+                    if (calculatedHash == null) {
+                        calculatedHash = calculateFileHash(file);
+                        System.out.println("LOG: Calculated SHA-256 hash: " + calculatedHash);
+                    }
+
+                    // 2. File Signature Analysis (Magic Numbers)
+                    // Read header hex code to verify true file type
+                    fileSignature = determineFileSignature(file);
+                    System.out.println("LOG: Block Structure Analysis / Magic Number: " + fileSignature);
                 }
             } catch (Exception e) {
-                System.err.println("LOG: Failed to calculate hash: " + e.getMessage());
+                System.err.println("LOG: Failed to analyze file: " + e.getMessage());
             }
         }
         newFile.setFileHash(calculatedHash);
+        newFile.setFileSignature(fileSignature);
 
         // Check for duplicate by Hash (The ultimate check)
         if (calculatedHash != null) {
@@ -206,6 +219,26 @@ public class DownloadCheckService {
             sb.append(Integer.toString((aByte & 0xff) + 0x100, 16).substring(1));
         }
         return sb.toString();
+    }
+
+    /**
+     * Reads the first 8 bytes of the file to determine its Magic Number
+     * (Signature).
+     * This allows us to verify the file type regardless of extension.
+     */
+    private String determineFileSignature(File file) throws IOException {
+        try (InputStream fis = new FileInputStream(file)) {
+            byte[] header = new byte[8];
+            int bytesRead = fis.read(header);
+            if (bytesRead == -1)
+                return null;
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < bytesRead; i++) {
+                sb.append(String.format("%02X", header[i]));
+            }
+            return sb.toString();
+        }
     }
 
 }

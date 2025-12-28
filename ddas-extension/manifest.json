@@ -15,7 +15,8 @@
     "clipboardWrite"
   ],
   "host_permissions": [
-    "http://localhost:9090/*"
+    "http://localhost:9090/*",
+    "<all_urls>"
   ],
   "icons": {
     "48": "icon48.png"

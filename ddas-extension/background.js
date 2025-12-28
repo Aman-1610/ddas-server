@@ -42,11 +42,14 @@ async function runDuplicateCheck(downloadId) {
 
         // Pause the download NOW, not in L2
         try {
-            await chrome.downloads.pause(downloadId);
+            const [item] = await chrome.downloads.search({ id: downloadId });
+            if (item && item.state === 'in_progress') {
+                await chrome.downloads.pause(downloadId);
+            }
         } catch (e) {
             console.warn(`(RUN_CHECK) Could not pause download ${downloadId}.`, e.message);
-            inProgressDownloads.delete(downloadId); // Clean up
-            return;
+            // inProgressDownloads.delete(downloadId); // Clean up
+            // return;
         }
 
         try {

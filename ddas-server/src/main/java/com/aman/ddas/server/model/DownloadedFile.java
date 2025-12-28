@@ -36,6 +36,9 @@ public class DownloadedFile {
     private String fileHash;
 
     @Column
+    private String fileSignature;
+
+    @Column
     private String downloaderId;
 
     @Column(nullable = false)
