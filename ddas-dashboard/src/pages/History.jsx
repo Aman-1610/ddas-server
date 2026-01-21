@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import Background3D from '../components/Background3D';
 import ThemeToggle from '../components/ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
+import { API_BASE_URL } from '../config';
 
 export default function History() {
     const [history, setHistory] = useState([]);
@@ -13,7 +14,7 @@ export default function History() {
     const { theme } = useTheme();
 
     useEffect(() => {
-        fetch('http://localhost:9090/api/dashboard/history')
+        fetch(`${API_BASE_URL}/api/dashboard/history`)
             .then(res => res.json())
             .then(data => setHistory(data))
             .catch(err => console.error("Failed to fetch history:", err));

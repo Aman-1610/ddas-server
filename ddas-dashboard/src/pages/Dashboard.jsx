@@ -6,6 +6,7 @@ import Background3D from '../components/Background3D';
 
 import ThemeToggle from '../components/ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
+import { API_BASE_URL } from '../config';
 
 function StatCard({ label, value, icon: Icon, color, delay }) {
     return (
@@ -73,7 +74,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         // Fetch stats from backend
-        fetch('http://localhost:9090/api/dashboard/stats')
+        fetch(`${API_BASE_URL}/api/dashboard/stats`)
             .then(res => res.json())
             .then(data => {
                 setStats(data);
@@ -82,7 +83,7 @@ export default function Dashboard() {
 
         // Poll every 5 seconds for live updates
         const interval = setInterval(() => {
-            fetch('http://localhost:9090/api/dashboard/stats')
+            fetch(`${API_BASE_URL}/api/dashboard/stats`)
                 .then(res => res.json())
                 .then(data => setStats(data))
                 .catch(err => console.error("Failed to fetch stats:", err));
@@ -94,7 +95,7 @@ export default function Dashboard() {
     // Handle Search
     useEffect(() => {
         if (searchTerm.length > 2) {
-            fetch(`http://localhost:9090/api/dashboard/search?query=${searchTerm}`)
+            fetch(`${API_BASE_URL}/api/dashboard/search?query=${searchTerm}`)
                 .then(res => res.json())
                 .then(data => setSearchResults(data))
                 .catch(err => console.error("Search failed:", err));

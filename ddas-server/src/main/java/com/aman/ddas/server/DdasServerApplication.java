@@ -8,8 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DdasServerApplication {
 
 	public static void main(String[] args) {
-		// Fix for Render/Heroku postgres URLs which start with postgres:// but Spring
-		// needs jdbc:postgresql://
+		
 		String envUrl = System.getenv("SPRING_DATASOURCE_URL");
 		if (envUrl != null && (envUrl.startsWith("postgres://") || envUrl.startsWith("postgresql://"))) {
 			try {
