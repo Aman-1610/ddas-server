@@ -8,8 +8,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DdasServerApplication {
 
 	public static void main(String[] args) {
-		
+
 		String envUrl = System.getenv("SPRING_DATASOURCE_URL");
+		if (envUrl == null || envUrl.isEmpty()) {
+			envUrl = System.getenv("DATABASE_URL");
+		}
 		if (envUrl != null && (envUrl.startsWith("postgres://") || envUrl.startsWith("postgresql://"))) {
 			try {
 				java.net.URI dbUri = new java.net.URI(envUrl);
